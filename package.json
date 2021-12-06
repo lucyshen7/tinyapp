@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/lucyshen7/tinyapp/issues"
   },
-  "homepage": "https://github.com/lucyshen7/tinyapp#readme"
+  "homepage": "https://github.com/lucyshen7/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
