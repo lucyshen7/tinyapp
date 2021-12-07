@@ -2,8 +2,9 @@
   "name": "tinyapp",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "express_server.js",
   "scripts": {
+    "start": "./node_modules/.bin/nodemon -L express_server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -11,7 +12,7 @@
     "url": "git+https://github.com/lucyshen7/tinyapp.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Lucy Shen <lucyshen77@gmail.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/lucyshen7/tinyapp/issues"
@@ -21,5 +22,8 @@
     "body-parser": "^1.19.0",
     "ejs": "^3.1.6",
     "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }
