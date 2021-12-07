@@ -50,9 +50,9 @@ app.get("/hello", (req, res) => {
 
 // generate a random shortURL
 function generateRandomString() {
-  const result = '';
-  const char = 'abcdefghijklmnopqrstuvwxyz';
-  for (let i = 0; i < 7; i++) {
+  let result = '';
+  const char = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 6; i++) {
     result += char.charAt(Math.floor(Math.random() * char.length));
   }
   return result;
