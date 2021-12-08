@@ -27,6 +27,25 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
+
+// Create registration page
+app.get("/register", (req, res) => {
+  const templateVars = {
+    // email: req.body.email,
+    // password: req.body.password,
+    username: req.cookies["username"],
+  }
+  res.render("register", templateVars)
+})
+// Register new users
+app.post("/register", (req, res) => {
+  console.log("registration successful!")
+  res.redirect("/urls");
+})
+
 // use Express render method to respond to requests by sending back a template, along with obj containing data the template needs
 app.get("/urls", (req, res) => {
   const templateVars = { 
@@ -69,14 +88,18 @@ app.post("/urls", (req, res) => {
 });
 
 // READ Data
-
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { 
-    shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"],
+  if (urlDatabase[req.params.shortURL]) {
+    const templateVars = { 
+      shortURL: req.params.shortURL, 
+      longURL: urlDatabase[req.params.shortURL],
+      username: req.cookies["username"],
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res.status(404).write("No such Short URL.");
+    res.end();
   };
-  res.render("urls_show", templateVars);
 });
 
 // UPDATE URL 
@@ -91,10 +114,6 @@ app.post("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
 });
 
 // PORT AND CALLBACK
