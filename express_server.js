@@ -1,6 +1,7 @@
 const PORT = 8080; // default port 8080
 const express = require("express");
 const bodyParser = require("body-parser");
+const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -13,8 +14,22 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID" : {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur" // change to 'abc' or '123'
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+}
+
 // MIDDLEWARE
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(morgan("dev"));
 
 // ROUTES
 // Homepage route "/", callback function will be executed when this route is requested
@@ -33,24 +48,54 @@ app.get("/urls.json", (req, res) => {
 
 // Create registration page
 app.get("/register", (req, res) => {
+  const user_id = req.cookies["user_id"];
+
   const templateVars = {
-    // email: req.body.email,
-    // password: req.body.password,
     username: req.cookies["username"],
+    user: users[user_id],
   }
   res.render("register", templateVars)
 })
-// Register new users
+
+// Create registration handler
 app.post("/register", (req, res) => {
-  console.log("registration successful!")
+  console.log("Registration successful!");
+  // const id = Object.keys(users).length + 1;
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+
+  console.log('users', users)
+
+  if (!email || !password) {
+    return res.status(400).send("Email and password cannot be blank")
+  }; 
+
+  const user = findUserByEmail(email);
+  // if user already exists (truthy value from helper function)
+  if (user) {
+    return res.status(400).send('A user already exists with that email')
+  }
+
+  users[`user${id}RandomID`] = {
+    id: `user${id}RandomID`,
+    email: email,
+    password: password
+  };
+  // set a user_id cookie containing newly generated ID
+  res.cookie('user_id', `user${id}RandomID`);
+  console.log('users', users)
   res.redirect("/urls");
 })
 
 // use Express render method to respond to requests by sending back a template, along with obj containing data the template needs
 app.get("/urls", (req, res) => {
+  const user_id = req.cookies["user_id"];
+
   const templateVars = { 
     urls: urlDatabase, 
     username: req.cookies["username"],
+    user: users[user_id],
 };
   res.render("urls_index", templateVars)
 });
@@ -63,7 +108,7 @@ app.post("/login", (req, res) => {
 
 // delete cookie
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls"); 
 });
 
@@ -75,9 +120,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // ADD New URL
 app.get("/urls/new", (req, res) => {
+  const user_id = req.cookies["user_id"];
+
   const templateVars = {
     username: req.cookies["username"],
+    user: users[user_id],
   };
+
+  console.log("req.cookies", req.cookies)
+
   res.render("urls_new", templateVars);
 });
 
@@ -89,11 +140,14 @@ app.post("/urls", (req, res) => {
 
 // READ Data
 app.get("/urls/:shortURL", (req, res) => {
+  const user_id = req.cookies["user_id"];
+
   if (urlDatabase[req.params.shortURL]) {
     const templateVars = { 
       shortURL: req.params.shortURL, 
       longURL: urlDatabase[req.params.shortURL],
       username: req.cookies["username"],
+      user: users[user_id],
     };
     res.render("urls_show", templateVars);
   } else {
@@ -129,4 +183,15 @@ function generateRandomString() {
     result += char.charAt(Math.floor(Math.random() * char.length));
   }
   return result;
+}
+
+// helper function to check if user exists
+function findUserByEmail(email) {
+  for (const userId in users) {
+    const user = users[userId];
+    if (user.email === email) {
+      return user;
+    }
+  }
+  return null;
 }
