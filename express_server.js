@@ -1,8 +1,10 @@
 const PORT = 8080; // default port 8080
 const express = require("express");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 
 const app = express();
+app.use(cookieParser());
 app.set("view engine", "ejs");
 
 // DATA
@@ -27,8 +29,23 @@ app.get("/hello", (req, res) => {
 
 // use Express render method to respond to requests by sending back a template, along with obj containing data the template needs
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { 
+    urls: urlDatabase, 
+    username: req.cookies["username"],
+};
   res.render("urls_index", templateVars)
+});
+
+// create cookie
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect("/urls");
+});
+
+// delete cookie
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls"); 
 });
 
 // DELETE URL
@@ -39,18 +56,26 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // ADD New URL
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("urls_new", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
-  // console.log("urlDatabase", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
+// READ Data
+
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { 
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"],
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -58,10 +83,8 @@ app.get("/urls/:shortURL", (req, res) => {
 // route to handle POST request to update a resource
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  // console.log("req.body", req.body)
   const newURL = req.body.newURL;
   urlDatabase[shortURL] = newURL;
-  // console.log("urlDatabase", urlDatabase);
   res.redirect("/urls");
 })
 
