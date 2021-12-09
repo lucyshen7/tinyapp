@@ -50,6 +50,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls.json", (req, res) => {
+  console.log('res', res)
   res.json(urlDatabase);
 });
 
@@ -71,8 +72,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email and password cannot be blank");
   }
 
-  const user = findUserByEmail(email);
-  // if user already exists (truthy value from helper function)
+  const user = findUserByEmail(email); // if user already exists (truthy value from helper function)
   if (user) {
     return res.status(400).send('A user already exists with that email. Please login.');
   }
@@ -102,14 +102,11 @@ app.get("/urls", (req, res) => {
     };
     res.render("urls_index", templateVars);
   }
-  
-  // if user_id not found
-  const templateVars = {
+  const templateVars = { // if user_id not found
     user: users[user_id],
     error: 'User not logged in. Please login.'
   };
-  res.status(403);
-  res.render("error", templateVars);
+  res.status(403).render("error", templateVars);
 });
 
 // a new login page
@@ -145,12 +142,6 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
-// delete cookie
-app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
-  res.redirect("/urls");
-});
-
 // GET delete page (same as post)
 app.get("/urls/:shortURL/delete", (req, res) => {
   const user_id = req.cookies["user_id"];
@@ -163,18 +154,15 @@ app.get("/urls/:shortURL/delete", (req, res) => {
 
     const templateVars = {
       user: users[user_id],
-      error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
+      error: 'Page Not Found. The URL you requested does not exist or you do not have permission to access.'
     };
-    res.status(404); // user does not own URL
-    res.render("error", templateVars);
+    res.status(404).render("error", templateVars); // user does not have permission
   };
-  // user not logged in
   const templateVars = {
     user: users[user_id],
     error: 'User not logged in. Please login.'
   };
-  res.status(403).send("User not logged in.\n");
-  res.render("error", templateVars);
+  res.status(403).render("error", templateVars); // user not logged in
 });
 
 // DELETE URL
@@ -190,11 +178,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     } 
     const templateVars = {
       user: users[user_id],
-      error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
+      error: 'Page Not Found. The URL you requested does not exist or you do not have permission to access.'
     };
-    res.status(404); // user does not own URL
-    res.render("error", templateVars);
-          
+    res.status(404).render("error", templateVars); // user does not own URL
   };
 
   // user not logged in
@@ -202,8 +188,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     user: users[user_id],
     error: 'User not logged in. Please login.'
   };
-  res.status(403).send("User not logged in.\n");
-  res.render("error", templateVars);
+  res.status(403).send('User not logged in.\n').render("error", templateVars);
 });
 
 // ADD New URL
@@ -252,16 +237,14 @@ app.get("/urls/:shortURL", (req, res) => {
         user: users[user_id],
         error: 'Page Not Found. The URL you requested does not exist or you do not have permission to access.'
       };
-      res.status(403).send("You do not have access.\n");
-      res.render("error", templateVars);
+      res.status(404).render("error", templateVars);
     }
   }
   const templateVars = {
     user: users[user_id],
     error: 'User not logged in. Please login.'
   };
-  res.status(403).send("User not logged in.\n");
-  res.render("error", templateVars);
+  res.status(403).render("error", templateVars);
 });
 
 
@@ -280,10 +263,10 @@ app.post("/urls/:shortURL", (req, res) => {
       
       const templateVars = {
         user: users[user_id],
-        error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
+        error: 'Page Not Found. The URL you requested does not exist or you do not have permission to access.'
       };
       
-      res.status(403).send("You do not have access.\n");
+      res.status(404);
       res.render("error", templateVars);
     }
   }
@@ -298,10 +281,16 @@ app.post("/urls/:shortURL", (req, res) => {
 // redirect to longURL, anyone can access
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) { // check if shortURL exists
-    return res.status(404).send("404 Page Not Found. TinyURL does not exist.");
+    return res.status(404).send("Page Not Found. TinyURL does not exist.");
   };
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
+});
+
+// Logout and delete cookie
+app.post("/logout", (req, res) => {
+  res.clearCookie('user_id');
+  res.redirect("/urls");
 });
 
 // PORT AND CALLBACK
@@ -310,8 +299,7 @@ app.listen(PORT, () => {
 });
 
 // HELPER FUNCTIONS
-
-// generate a random shortURL
+// generate random shortURL and userID
 function generateRandomString() {
   let result = '';
   const char = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -321,7 +309,7 @@ function generateRandomString() {
   return result;
 }
 
-// helper function to check if user exists
+// check if user exists
 function findUserByEmail(email) {
   for (const userId in users) {
     const user = users[userId];
