@@ -146,8 +146,8 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
-// DELETE URL
-app.post("/urls/:shortURL/delete", (req, res) => {
+// GET delete page (same as post)
+app.get("/urls/:shortURL/delete", (req, res) => {
   const user_id = req.cookies["user_id"];
   // if user logged in
   if (user_id) {
@@ -155,20 +155,48 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     if (output[req.params.shortURL]) { // if user created that URL
       delete urlDatabase[req.params.shortURL];
       res.redirect("/urls");
-    } else {
-      const templateVars = {
-        user: users[user_id],
-      };
-      res.status(403).send("You do not have permission to delete this URL."); // user does not own URL
-      res.render("error_404", templateVars);
-    }
-  } else { // user not logged in
+    } 
     const templateVars = {
       user: users[user_id],
     };
-    res.status(403).send("User not logged in.\n");
-    res.render("error_login", templateVars);
-  }
+    res.status(404); // user does not own URL
+    res.render("error_404", templateVars);
+  };
+  // user not logged in
+  const templateVars = {
+    user: users[user_id],
+  };
+  res.status(403).send("User not logged in.\n");
+  res.render("error_login", templateVars);
+});
+
+// DELETE URL
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const user_id = req.cookies["user_id"];
+
+  // if user logged in
+  if (user_id) {
+    const output = urlsForUser(user_id);
+
+    if (output[req.params.shortURL]) { // if user created that URL
+      delete urlDatabase[req.params.shortURL];
+      res.redirect("/urls");
+    } 
+    
+    const templateVars = {
+      user: users[user_id],
+    };
+    res.status(404); // user does not own URL
+    res.render("error_404", templateVars);
+          
+  };
+
+  // user not logged in
+  const templateVars = {
+    user: users[user_id],
+  };
+  res.status(403).send("User not logged in.\n");
+  res.render("error_login", templateVars);
 });
 
 // ADD New URL
