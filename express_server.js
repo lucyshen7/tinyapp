@@ -18,12 +18,12 @@ const users = {
   "userRandomID" : {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur" // change to 'abc' or '123'
+    password: "abc" // change to 'abc' or '123'
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: "123"
   }
 }
 
@@ -51,7 +51,6 @@ app.get("/register", (req, res) => {
   const user_id = req.cookies["user_id"];
 
   const templateVars = {
-    username: req.cookies["username"],
     user: users[user_id],
   }
   res.render("register", templateVars)
@@ -74,7 +73,7 @@ app.post("/register", (req, res) => {
   const user = findUserByEmail(email);
   // if user already exists (truthy value from helper function)
   if (user) {
-    return res.status(400).send('A user already exists with that email')
+    return res.status(400).send('A user already exists with that email. Please login.')
   }
 
   users[`user${id}RandomID`] = {
@@ -94,7 +93,6 @@ app.get("/urls", (req, res) => {
 
   const templateVars = { 
     urls: urlDatabase, 
-    username: req.cookies["username"],
     user: users[user_id],
 };
   res.render("urls_index", templateVars)
@@ -109,10 +107,33 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-// create cookie
+// POST /login endpoint
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
+  console.log("Trying to log in...");
+  const email = req.body.email;
+  const password = req.body.password;
+
+  console.log('users', users)
+
+  if (!email || !password) {
+    return res.status(400).send("Email and password cannot be blank"); // if blank forms
+  }; 
+
+  const user = findUserByEmail(email);
+  // if user already exists (truthy value from helper function)
+  if (!user) {
+    return res.status(403).send('Email cannot be found. Please register.'); // if user does not exist
+  };
+  
+  if (user.password !== password) {
+    return res.status(403).send('Incorrect password. Please try again.'); // if email is located, but password does not match
+  };
+
+  // happy path: set a user_id cookie with matching user's random ID
+  res.cookie('user_id', user.id);
+  console.log('users', users);
   res.redirect("/urls");
+
 });
 
 // delete cookie
@@ -132,7 +153,6 @@ app.get("/urls/new", (req, res) => {
   const user_id = req.cookies["user_id"];
 
   const templateVars = {
-    username: req.cookies["username"],
     user: users[user_id],
   };
 
@@ -155,7 +175,6 @@ app.get("/urls/:shortURL", (req, res) => {
     const templateVars = { 
       shortURL: req.params.shortURL, 
       longURL: urlDatabase[req.params.shortURL],
-      username: req.cookies["username"],
       user: users[user_id],
     };
     res.render("urls_show", templateVars);
