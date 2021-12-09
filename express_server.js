@@ -70,11 +70,13 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("Email and password cannot be blank");
   }
+
   const user = findUserByEmail(email);
   // if user already exists (truthy value from helper function)
   if (user) {
     return res.status(400).send('A user already exists with that email. Please login.');
   }
+  
   users[id] = {
     id: id,
     email: email,
@@ -93,18 +95,21 @@ app.get("/urls", (req, res) => {
   // users can only see their own shortened URLs
   if (user_id) {
     const output = urlsForUser(user_id);
+
     const templateVars = {
       urls: output,
       user: users[user_id],
     };
     res.render("urls_index", templateVars);
   }
+  
   // if user_id not found
   const templateVars = {
     user: users[user_id],
+    error: 'User not logged in. Please login.'
   };
   res.status(403);
-  res.render("error_login", templateVars);
+  res.render("error", templateVars);
 });
 
 // a new login page
@@ -153,21 +158,23 @@ app.get("/urls/:shortURL/delete", (req, res) => {
   if (user_id) {
     const output = urlsForUser(user_id);
     if (output[req.params.shortURL]) { // if user created that URL
-      delete urlDatabase[req.params.shortURL];
       res.redirect("/urls");
     } 
+
     const templateVars = {
       user: users[user_id],
+      error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
     };
     res.status(404); // user does not own URL
-    res.render("error_404", templateVars);
+    res.render("error", templateVars);
   };
   // user not logged in
   const templateVars = {
     user: users[user_id],
+    error: 'User not logged in. Please login.'
   };
   res.status(403).send("User not logged in.\n");
-  res.render("error_login", templateVars);
+  res.render("error", templateVars);
 });
 
 // DELETE URL
@@ -177,26 +184,26 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   // if user logged in
   if (user_id) {
     const output = urlsForUser(user_id);
-
     if (output[req.params.shortURL]) { // if user created that URL
       delete urlDatabase[req.params.shortURL];
       res.redirect("/urls");
     } 
-    
     const templateVars = {
       user: users[user_id],
+      error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
     };
     res.status(404); // user does not own URL
-    res.render("error_404", templateVars);
+    res.render("error", templateVars);
           
   };
 
   // user not logged in
   const templateVars = {
     user: users[user_id],
+    error: 'User not logged in. Please login.'
   };
   res.status(403).send("User not logged in.\n");
-  res.render("error_login", templateVars);
+  res.render("error", templateVars);
 });
 
 // ADD New URL
@@ -243,16 +250,18 @@ app.get("/urls/:shortURL", (req, res) => {
     } else {
       const templateVars = {
         user: users[user_id],
+        error: 'Page Not Found. The URL you requested does not exist or you do not have permission to access.'
       };
       res.status(403).send("You do not have access.\n");
-      res.render("error_404", templateVars);
+      res.render("error", templateVars);
     }
   }
   const templateVars = {
     user: users[user_id],
+    error: 'User not logged in. Please login.'
   };
   res.status(403).send("User not logged in.\n");
-  res.render("error_login", templateVars);
+  res.render("error", templateVars);
 });
 
 
@@ -268,27 +277,31 @@ app.post("/urls/:shortURL", (req, res) => {
       urlDatabase[shortURL].longURL = newURL;
       res.redirect("/urls");
     } else {
+      
       const templateVars = {
         user: users[user_id],
+        error: '404 Not Found. The URL you requested does not exist or you do not have permission to access.'
       };
+      
       res.status(403).send("You do not have access.\n");
-      res.render("error_404", templateVars);
+      res.render("error", templateVars);
     }
   }
   const templateVars = {
     user: users[user_id],
+    error: 'User not logged in. Please login.'
   };
   res.status(403).send("User not logged in.\n");
-  res.render("error_login", templateVars);
+  res.render("error", templateVars);
 });
 
 // redirect to longURL, anyone can access
 app.get("/u/:shortURL", (req, res) => {
-  if (urlDatabase[req.params.shortURL]) { // check if shortURL exists
-    const longURL = urlDatabase[req.params.shortURL].longURL;
-    res.redirect(longURL);
-  }
-  return res.status(404).send("404 Page Not Found. TinyURL does not exist.");
+  if (!urlDatabase[req.params.shortURL]) { // check if shortURL exists
+    return res.status(404).send("404 Page Not Found. TinyURL does not exist.");
+  };
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
 });
 
 // PORT AND CALLBACK
