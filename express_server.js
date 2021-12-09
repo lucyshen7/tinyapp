@@ -100,7 +100,7 @@ app.get("/urls", (req, res) => {
     res.render("urls_index", templateVars);
   }
   // if user_id not found
-  const templateVars = { 
+  const templateVars = {
     user: users[user_id],
   };
   res.status(403);
@@ -160,14 +160,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
         user: users[user_id],
       };
       res.status(403).send("You do not have permission to delete this URL."); // user does not own URL
-      res.render("error_404", templateVars)
+      res.render("error_404", templateVars);
     }
   } else { // user not logged in
     const templateVars = {
       user: users[user_id],
     };
     res.status(403).send("User not logged in.\n");
-    res.render("error_login", templateVars);    
+    res.render("error_login", templateVars);
   }
 });
 
@@ -215,15 +215,15 @@ app.get("/urls/:shortURL", (req, res) => {
     } else {
       const templateVars = {
         user: users[user_id],
-      }
+      };
       res.status(403).send("You do not have access.\n");
-      res.render("error_404", templateVars)
-    };
+      res.render("error_404", templateVars);
+    }
   }
   const templateVars = {
     user: users[user_id],
   };
-  res.status(403).send("User not logged in.\n")
+  res.status(403).send("User not logged in.\n");
   res.render("error_login", templateVars);
 });
 
@@ -243,27 +243,22 @@ app.post("/urls/:shortURL", (req, res) => {
       const templateVars = {
         user: users[user_id],
       };
-      res.status(403).send("You do not have access.\n")
+      res.status(403).send("You do not have access.\n");
       res.render("error_404", templateVars);
     }
   }
   const templateVars = {
     user: users[user_id],
   };
-  res.status(403).send("User not logged in.\n")
-  res.render("error_login", templateVars);  
+  res.status(403).send("User not logged in.\n");
+  res.render("error_login", templateVars);
 });
 
-// redirect to longURL
+// redirect to longURL, anyone can access
 app.get("/u/:shortURL", (req, res) => {
-  const user_id = req.cookies["user_id"];
-  if (user_id) {
-    const output = urlsForUser(user_id);
-    if (output[req.params.shortURL]) {
-      const longURL = output[req.params.shortURL].longURL;
-      console.log('output', output)
-      res.redirect(longURL);
-    }
+  if (urlDatabase[req.params.shortURL]) { // check if shortURL exists
+    const longURL = urlDatabase[req.params.shortURL].longURL;
+    res.redirect(longURL);
   }
   return res.status(404).send("404 Page Not Found. TinyURL does not exist.");
 });
