@@ -100,6 +100,15 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars)
 });
 
+// a new login page
+app.get("/login", (req, res) => {
+  const user_id = req.cookies["user_id"];
+  const templateVars = {
+    user: users[user_id],
+  };
+  res.render("login", templateVars);
+});
+
 // create cookie
 app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
