@@ -311,12 +311,12 @@ app.get('/u/:shortURL', (req, res) => {
   urlDatabase[shortURL].visits[count] = timestamp(); // store visitor timestamp
   
   const IP = req._remoteAddress;
-  const isUnique = isUniqueVisit(shortURL, IP, user_id); // check if unique visit
+  const isUnique = isUniqueVisit(shortURL, IP, user_id); // check if unique visit, if not unique, don't save cookie
   
-  if (isUnique) { // if not logged in and is unique
+  if (isUnique && !user_id) { // if not logged in and is unique
     const id = generateRandomString();
     req.session.user_id = id; // set new session cookie
-  }
+  } 
   
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL); // redirect to longURL, anyone w/ link can access
