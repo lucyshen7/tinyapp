@@ -15,15 +15,34 @@
       <div class="card-body">
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
+        <p class="card-text">Number of Visits: <%= count %></a></p>
       </div>
       <div class="card-footer text-muted">
         <h3>Edit</h3>
-        <form method="POST" action="/urls/<%= shortURL %>">
+        <form method="POST" action="/urls/<%= shortURL %>?_method=PUT">
             <label for="newURL">New URL:</label>
             <input type="text" name="newURL" placeholder="http://" style="width: 250px; margin: 1em">
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
       </div>
+    </div>
+    <table class="table">
+      <div class="card-text">
+       <thead>
+        <tr>
+          <th scope="col">Visitor #</th>
+          <th scope="col">Date Visited</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for(let visit in visits) { %>
+          <tr>
+            <td><%= visit %></td>
+            <td><%= visits[visit] %></td>
+          </tr>
+          <% } %>
+        </tbody>
+    </table>
     </div>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>

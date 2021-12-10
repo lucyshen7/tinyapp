@@ -6,6 +6,7 @@ const cookieSession = require('cookie-session');
 const { restart } = require('nodemon');
 const bcrypt = require('bcryptjs');
 const { getUserByEmail } = require('./helpers');
+const methodOverride = require('method-override');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -19,6 +20,7 @@ app.use(
     keys: ['I like dogs and plants', 'lighthouse'],
   })
 );
+app.use(methodOverride('_method')); // override with POST having ?_method=DELETE
 
 //
 // DATABASES
@@ -26,11 +28,15 @@ app.use(
 const urlDatabase = {
   'b2xVn2': {
     longURL: 'http://www.lighthouselabs.ca',
-    userID: 'userRandomID'
+    userID: 'userRandomID',
+    count: 0,
+    visits: {}
   },
   '9sm5xK': {
     longURL: 'http://www.google.com',
-    userID: 'user2RandomID'
+    userID: 'user2RandomID',
+    count: 0,
+    visits: {}
   }
 };
 
@@ -133,7 +139,7 @@ app.post('/login', (req, res) => {
 });
 
 // LOGOUT
-app.post('/logout', (req, res) => {
+app.delete('/logout', (req, res) => { // method override
   delete req.session.user_id; // on logout, delete session cookie
   return res.redirect('/urls');
 });
@@ -180,7 +186,9 @@ app.post('/urls', (req, res) => { // New URLs will POST to /urls
     const shortURL = generateRandomString();
     urlDatabase[shortURL] = {
       longURL: req.body.longURL,
-      userID: user_id // if logged in, save new shortURL to urlDatabase (w/ userID)
+      userID: user_id, // if logged in, save new shortURL to urlDatabase (w/ userID)
+      count: 0,
+      visits: {}
     };
     return res.redirect(`/urls/${shortURL}`);
   }
@@ -206,6 +214,8 @@ app.get('/urls/:shortURL', (req, res) => {
       const templateVars = {
         shortURL: shortURL,
         longURL: output[shortURL].longURL,
+        count: output[shortURL].count,
+        visits: output[shortURL].visits,
         user: users[user_id],
       };
       return res.render('urls_show', templateVars);
@@ -225,7 +235,7 @@ app.get('/urls/:shortURL', (req, res) => {
 });
 
 // EDIT Long URL
-app.post('/urls/:shortURL', (req, res) => { // route to handle POST request to update a resource
+app.put('/urls/:shortURL', (req, res) => { // method override // route to handle POST request to update a resource
   const user_id = req.session.user_id;
   const shortURL = req.params.shortURL;
   if (!urlDatabase[shortURL]) {
@@ -257,7 +267,7 @@ app.post('/urls/:shortURL', (req, res) => { // route to handle POST request to u
 //
 // DELETE Short URLs
 //
-app.post('/urls/:shortURL/delete', (req, res) => {
+app.delete('/urls/:shortURL/delete', (req, res) => { // method override
   const user_id = req.session.user_id;
   const shortURL = req.params.shortURL;
   if (!urlDatabase[shortURL]) { // if no shortURL exist
@@ -285,10 +295,15 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 // READ Short URL --> Redirect to Long URL
 //
 app.get('/u/:shortURL', (req, res) => {
-  if (!urlDatabase[req.params.shortURL]) { // check if shortURL exists
+  const shortURL = req.params.shortURL;
+  if (!urlDatabase[shortURL]) { // check if shortURL exists
     return res.status(404).send('404 Page Not Found. No such .');
   }
-  const longURL = urlDatabase[req.params.shortURL].longURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  countVisitors(shortURL);
+  const count = urlDatabase[shortURL].count;
+  urlDatabase[shortURL].visits[count] = timestamp();
+  console.log('urlDatabase', urlDatabase);
   res.redirect(longURL); // redirect to longURL, anyone w/ link can access
 });
 
@@ -319,4 +334,14 @@ function urlsForUser(id) { // Generates new object of URLs specific to userID
     }
   }
   return output;
+}
+
+function countVisitors(shortURL) {
+  urlDatabase[shortURL].count++; // match the shortURL in database and increment visitors
+} 
+
+function timestamp() {
+  const time = new Date();
+  const str = time.toDateString();
+  return `${str.slice(0,4)}, ${str.slice(4,10)}, ${str.slice(11)}`
 }
