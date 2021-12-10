@@ -30,13 +30,15 @@ const urlDatabase = {
     longURL: 'http://www.lighthouselabs.ca',
     userID: 'userRandomID',
     count: 0,
-    visits: {}
+    visits: {},
+    unique: {}
   },
   '9sm5xK': {
     longURL: 'http://www.google.com',
     userID: 'user2RandomID',
     count: 0,
-    visits: {}
+    visits: {},
+    unique: {}
   }
 };
 
@@ -151,6 +153,7 @@ app.get('/urls', (req, res) => {
   const user_id = req.session.user_id;
   if (user_id) {
     const output = urlsForUser(user_id); // fetch user's own URLs from urlDatabase
+
     const templateVars = {
       urls: output, // users can only see their own shortened URLs
       user: users[user_id],
@@ -188,7 +191,8 @@ app.post('/urls', (req, res) => { // New URLs will POST to /urls
       longURL: req.body.longURL,
       userID: user_id, // if logged in, save new shortURL to urlDatabase (w/ userID)
       count: 0,
-      visits: {}
+      visits: {},
+      unique: {}
     };
     return res.redirect(`/urls/${shortURL}`);
   }
@@ -216,6 +220,7 @@ app.get('/urls/:shortURL', (req, res) => {
         longURL: output[shortURL].longURL,
         count: output[shortURL].count,
         visits: output[shortURL].visits,
+        unique: output[shortURL].unique,
         user: users[user_id],
       };
       return res.render('urls_show', templateVars);
@@ -296,14 +301,24 @@ app.delete('/urls/:shortURL/delete', (req, res) => { // method override
 //
 app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
+  const user_id = req.session.user_id;
+
   if (!urlDatabase[shortURL]) { // check if shortURL exists
     return res.status(404).send('404 Page Not Found. No such .');
   }
+
+  const count = countVisitors(shortURL);
+  urlDatabase[shortURL].visits[count] = timestamp(); // store visitor timestamp
+  
+  const IP = req._remoteAddress;
+  const isUnique = isUniqueVisit(shortURL, IP, user_id); // check if unique visit
+  
+  if (isUnique) { // if not logged in and is unique
+    const id = generateRandomString();
+    req.session.user_id = id; // set new session cookie
+  }
+  
   const longURL = urlDatabase[shortURL].longURL;
-  countVisitors(shortURL);
-  const count = urlDatabase[shortURL].count;
-  urlDatabase[shortURL].visits[count] = timestamp();
-  console.log('urlDatabase', urlDatabase);
   res.redirect(longURL); // redirect to longURL, anyone w/ link can access
 });
 
@@ -338,10 +353,19 @@ function urlsForUser(id) { // Generates new object of URLs specific to userID
 
 function countVisitors(shortURL) {
   urlDatabase[shortURL].count++; // match the shortURL in database and increment visitors
-} 
+  return urlDatabase[shortURL].count; // return updated count
+}
 
 function timestamp() {
   const time = new Date();
   const str = time.toDateString();
-  return `${str.slice(0,4)}, ${str.slice(4,10)}, ${str.slice(11)}`
+  return `${str.slice(0,4)}, ${str.slice(4,10)}, ${str.slice(11)}`;
+}
+
+function isUniqueVisit(shortURL, IP, user_id) { // IP is req._remoteAddress / client IP-address
+  if (!urlDatabase[shortURL].unique[IP]) { // if IP-address not stored
+    urlDatabase[shortURL].unique[IP] = user_id; // set value of IP key to user_id
+    return true;
+  }
+  return false;
 }

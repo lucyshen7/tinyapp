@@ -16,6 +16,7 @@
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
         <p class="card-text">Number of Visits: <%= count %></a></p>
+        <p class="card-text">Number of Unique Visits: <%= Object.keys(unique).length %></a></p>
       </div>
       <div class="card-footer text-muted">
         <h3>Edit</h3>
