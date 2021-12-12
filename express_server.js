@@ -142,7 +142,7 @@ app.post('/login', (req, res) => {
 
 // LOGOUT
 app.delete('/logout', (req, res) => { // method override
-  delete req.session.user_id; // on logout, delete session cookie
+  req.session = null; // on logout, delete session cookie
   return res.redirect('/urls');
 });
 
@@ -293,7 +293,7 @@ app.delete('/urls/:shortURL/delete', (req, res) => { // method override
     user: users[user_id],
     error: 'User not logged in. Please login.'
   };
-  return res.status(403).send('User not logged in.\n').render('error', templateVars);
+  return res.status(403).render('error', templateVars);
 });
 
 //
@@ -304,7 +304,7 @@ app.get('/u/:shortURL', (req, res) => {
   const user_id = req.session.user_id;
 
   if (!urlDatabase[shortURL]) { // check if shortURL exists
-    return res.status(404).send('404 Page Not Found. No such .');
+    return res.status(404).send('404 Page Not Found. No such TinyURL.');
   }
 
   const count = countVisitors(shortURL);
