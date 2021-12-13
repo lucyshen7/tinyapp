@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const cookieSession = require('cookie-session');
 const { restart } = require('nodemon');
 const bcrypt = require('bcryptjs');
-const { getUserByEmail } = require('./helpers');
+const { getUserByEmail, generateRandomString, urlsForUser, countVisitors, timestamp, isUniqueVisit } = require('./helpers');
 const methodOverride = require('method-override');
 
 const app = express();
@@ -152,7 +152,7 @@ app.delete('/logout', (req, res) => { // method override
 app.get('/urls', (req, res) => {
   const user_id = req.session.user_id;
   if (user_id) {
-    const output = urlsForUser(user_id); // fetch user's own URLs from urlDatabase
+    const output = urlsForUser(user_id, urlDatabase); // fetch user's own URLs from urlDatabase
 
     const templateVars = {
       urls: output, // users can only see their own shortened URLs
@@ -213,7 +213,7 @@ app.get('/urls/:shortURL', (req, res) => {
   }
 
   if (user_id) {
-    const output = urlsForUser(user_id);
+    const output = urlsForUser(user_id, urlDatabase);
     if (output[shortURL]) { // users can only see their own shortened URLs
       const templateVars = {
         shortURL: shortURL,
@@ -248,7 +248,7 @@ app.put('/urls/:shortURL', (req, res) => { // method override // route to handle
   }
 
   if (user_id) {
-    const output = urlsForUser(user_id);
+    const output = urlsForUser(user_id, urlDatabase);
     if (output[shortURL]) {
       const newURL = req.body.newURL;
       urlDatabase[shortURL].longURL = newURL;
@@ -280,7 +280,7 @@ app.delete('/urls/:shortURL/delete', (req, res) => { // method override
   }
 
   if (user_id) { // if user logged in
-    const output = urlsForUser(user_id);
+    const output = urlsForUser(user_id, urlDatabase);
     if (output[shortURL]) { // if user created that URL
       delete urlDatabase[shortURL];
       return res.redirect('/urls');
@@ -307,11 +307,11 @@ app.get('/u/:shortURL', (req, res) => {
     return res.status(404).send('404 Page Not Found. No such TinyURL.');
   }
 
-  const count = countVisitors(shortURL);
+  const count = countVisitors(shortURL, urlDatabase);
   urlDatabase[shortURL].visits[count] = timestamp(); // store visitor timestamp
   
   const IP = req._remoteAddress;
-  const isUnique = isUniqueVisit(shortURL, IP, user_id); // check if unique visit, if not unique, don't save cookie
+  const isUnique = isUniqueVisit(shortURL, IP, user_id, urlDatabase); // check if unique visit, if not unique, don't save cookie
   
   if (isUnique && !user_id) { // if not logged in and is unique
     const id = generateRandomString();
@@ -328,44 +328,3 @@ app.get('/u/:shortURL', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🐸 TinyApp listening on port ${PORT}!`);
 });
-
-//
-// HELPER FUNCTIONS
-//
-function generateRandomString() { // Generates 6-digit alphanumeric string
-  let result = '';
-  const char = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 6; i++) {
-    result += char.charAt(Math.floor(Math.random() * char.length));
-  }
-  return result;
-}
-
-function urlsForUser(id) { // Generates new object of URLs specific to userID
-  const output = {};
-  for (const url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      output[url] = urlDatabase[url];
-    }
-  }
-  return output;
-}
-
-function countVisitors(shortURL) {
-  urlDatabase[shortURL].count++; // match the shortURL in database and increment visitors
-  return urlDatabase[shortURL].count; // return updated count
-}
-
-function timestamp() {
-  const time = new Date();
-  const str = time.toDateString();
-  return `${str.slice(0,4)}, ${str.slice(4,10)}, ${str.slice(11)}`;
-}
-
-function isUniqueVisit(shortURL, IP, user_id) { // IP is req._remoteAddress / client IP-address
-  if (!urlDatabase[shortURL].unique[IP]) { // if IP-address not stored
-    urlDatabase[shortURL].unique[IP] = user_id; // set value of IP key to user_id
-    return true;
-  }
-  return false;
-}
